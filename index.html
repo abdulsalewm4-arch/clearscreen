@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ClearScreen — Stock Screener</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #ffffff; --bg2: #f6f7f9; --bg3: #f0f1f4;
+      --text: #111; --text2: #555; --text3: #888;
+      --border: rgba(0,0,0,0.1); --border2: rgba(0,0,0,0.18);
+      --blue: #378ADD; --green: #3B6D11; --green-bg: #EAF3DE;
+      --amber: #BA7517; --amber-bg: #FAEEDA;
+      --red: #A32D2D; --red-bg: #FCEBEB;
+      --radius: 8px; --radius-lg: 12px;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1a1a1a; --bg2: #222; --bg3: #2a2a2a;
+        --text: #f0f0f0; --text2: #aaa; --text3: #666;
+        --border: rgba(255,255,255,0.1); --border2: rgba(255,255,255,0.2);
+        --green: #97C459; --green-bg: #173404;
+        --amber: #EF9F27; --amber-bg: #412402;
+        --red: #F09595; --red-bg: #501313;
+      }
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg3); color: var(--text); min-height: 100vh; }
+    .container { max-width: 1100px; margin: 0 auto; padding: 2rem 1rem; }
+    .top-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 12px; }
+    .logo { display: flex; align-items: center; gap: 10px; }
+    .logo-mark { width: 36px; height: 36px; background: var(--blue); border-radius: 9px; display: flex; align-items: center; justify-content: center; }
+    .logo-mark i { color: #fff; font-size: 20px; }
+    .logo-text { font-size: 20px; font-weight: 600; color: var(--text); }
+    .logo-sub { font-size: 12px; color: var(--text3); }
+    .tagline { font-size: 13px; color: var(--text2); background: var(--bg2); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 6px 14px; }
+    .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 1.5rem; }
+    .stat-card { background: var(--bg); border-radius: var(--radius); padding: 14px 16px; border: 0.5px solid var(--border); }
+    .stat-label { font-size: 12px; color: var(--text3); margin-bottom: 4px; }
+    .stat-val { font-size: 22px; font-weight: 600; color: var(--text); }
+    .stat-val.green { color: var(--green); }
+    .stat-val.red { color: var(--red); }
+    .filters { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem; margin-bottom: 1rem; }
+    .filters-title { font-size: 11px; font-weight: 600; color: var(--text3); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.07em; }
+    .filter-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(155px, 1fr)); gap: 12px; }
+    .filter-item label { display: block; font-size: 12px; color: var(--text2); margin-bottom: 5px; }
+    .filter-item select, .filter-item input {
+      width: 100%; padding: 7px 10px; font-size: 13px; border: 0.5px solid var(--border2);
+      border-radius: var(--radius); background: var(--bg2); color: var(--text);
+      outline: none; transition: border-color 0.15s;
+    }
+    .filter-item select:focus, .filter-item input:focus { border-color: var(--blue); }
+    .search-row { display: flex; gap: 10px; margin-bottom: 1rem; align-items: center; }
+    .search-wrap { flex: 1; position: relative; }
+    .search-wrap i { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text3); font-size: 16px; pointer-events: none; }
+    .search-wrap input { padding-left: 34px !important; }
+    .btn { background: var(--bg); border: 0.5px solid var(--border2); border-radius: var(--radius); padding: 7px 14px; font-size: 13px; cursor: pointer; color: var(--text2); transition: background 0.1s; }
+    .btn:hover { background: var(--bg2); color: var(--text); }
+    .results-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .results-count { font-size: 13px; color: var(--text2); }
+    .table-wrap { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 700px; }
+    thead th { background: var(--bg2); padding: 10px 14px; text-align: left; font-weight: 500; font-size: 12px; color: var(--text2); border-bottom: 0.5px solid var(--border); cursor: pointer; white-space: nowrap; user-select: none; }
+    thead th:hover { color: var(--text); }
+    thead th.active { color: var(--blue); }
+    tbody tr { border-bottom: 0.5px solid var(--border); transition: background 0.1s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--bg2); }
+    tbody td { padding: 11px 14px; vertical-align: middle; }
+    .ticker { font-weight: 600; color: var(--blue); font-family: monospace; font-size: 14px; }
+    .company { color: var(--text3); font-size: 12px; margin-top: 1px; }
+    .positive { color: var(--green); font-weight: 500; }
+    .negative { color: var(--red); font-weight: 500; }
+    .badge { display: inline-block; padding: 3px 9px; border-radius: 5px; font-size: 11px; font-weight: 600; }
+    .badge-buy { background: var(--green-bg); color: var(--green); }
+    .badge-hold { background: var(--amber-bg); color: var(--amber); }
+    .badge-sell { background: var(--red-bg); color: var(--red); }
+    .sector-tag { display: inline-block; padding: 3px 8px; border-radius: 5px; font-size: 11px; background: var(--bg2); color: var(--text2); border: 0.5px solid var(--border); }
+    .score-bar-wrap { display: flex; align-items: center; gap: 8px; min-width: 90px; }
+    .score-bar { height: 4px; background: var(--border); border-radius: 2px; flex: 1; overflow: hidden; }
+    .score-fill { height: 100%; border-radius: 2px; }
+    .score-num { font-size: 12px; font-weight: 600; min-width: 24px; text-align: right; }
+    .empty { padding: 3rem; text-align: center; color: var(--text3); }
+    .empty i { font-size: 36px; margin-bottom: 10px; display: block; opacity: 0.35; }
+    footer { text-align: center; margin-top: 2rem; font-size: 12px; color: var(--text3); }
+    footer a { color: var(--blue); text-decoration: none; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="top-bar">
+    <div class="logo">
+      <div class="logo-mark"><i class="ti ti-chart-candle"></i></div>
+      <div>
+        <div class="logo-text">ClearScreen</div>
+        <div class="logo-sub">Stock Screener for Retail Investors</div>
+      </div>
+    </div>
+    <div class="tagline">Plain-English signals. No jargon.</div>
+  </div>
+
+  <div class="stats-row" id="stats-row"></div>
+
+  <div class="filters">
+    <div class="filters-title">Filters</div>
+    <div class="filter-grid">
+      <div class="filter-item">
+        <label>Sector</label>
+        <select id="f-sector" onchange="applyFilters()">
+          <option value="">All sectors</option>
+          <option>Technology</option>
+          <option>Healthcare</option>
+          <option>Energy</option>
+          <option>Finance</option>
+          <option>Consumer</option>
+          <option>Industrials</option>
+        </select>
+      </div>
+      <div class="filter-item">
+        <label>Signal</label>
+        <select id="f-signal" onchange="applyFilters()">
+          <option value="">All signals</option>
+          <option value="Buy">Buy</option>
+          <option value="Hold">Hold</option>
+          <option value="Sell">Sell</option>
+        </select>
+      </div>
+      <div class="filter-item">
+        <label>PE Ratio max</label>
+        <input type="number" id="f-pe" placeholder="e.g. 30" oninput="applyFilters()" min="0" />
+      </div>
+      <div class="filter-item">
+        <label>Min score</label>
+        <select id="f-score" onchange="applyFilters()">
+          <option value="0">Any</option>
+          <option value="60">60+</option>
+          <option value="70">70+</option>
+          <option value="80">80+</option>
+        </select>
+      </div>
+      <div class="filter-item">
+        <label>1Y return</label>
+        <select id="f-ret" onchange="applyFilters()">
+          <option value="">Any</option>
+          <option value="pos">Positive only</option>
+          <option value="10">10%+</option>
+          <option value="25">25%+</option>
+          <option value="neg">Negative only</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="search-row">
+    <div class="search-wrap">
+      <i class="ti ti-search"></i>
+      <input type="text" id="search" placeholder="Search ticker or company name..." oninput="applyFilters()" />
+    </div>
+    <button class="btn" onclick="resetFilters()"><i class="ti ti-refresh"></i> Reset</button>
+  </div>
+
+  <div class="results-header">
+    <span class="results-count" id="results-count"></span>
+    <span style="font-size:12px;color:var(--text3)">Click column headers to sort</span>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th onclick="sortBy('ticker')" id="th-ticker">Ticker ↕</th>
+          <th onclick="sortBy('pe')" id="th-pe">PE Ratio ↕</th>
+          <th onclick="sortBy('return1y')" id="th-return1y">1Y Return ↕</th>
+          <th onclick="sortBy('momentum')" id="th-momentum">Momentum ↕</th>
+          <th onclick="sortBy('score')" id="th-score">Score ↕</th>
+          <th>Sector</th>
+          <th onclick="sortBy('signal')" id="th-signal">Signal ↕</th>
+        </tr>
+      </thead>
+      <tbody id="table-body"></tbody>
+    </table>
+  </div>
+
+  <footer>
+    <p>Built by a student investor · Data is for educational purposes only · Not financial advice</p>
+  </footer>
+</div>
+
+<script>
+const STOCKS = [
+  { ticker:'NVDA', company:'NVIDIA Corp', sector:'Technology', pe:52, return1y:178, momentum:94, score:91, signal:'Buy' },
+  { ticker:'AAPL', company:'Apple Inc', sector:'Technology', pe:29, return1y:23, momentum:61, score:72, signal:'Hold' },
+  { ticker:'MSFT', company:'Microsoft Corp', sector:'Technology', pe:35, return1y:31, momentum:68, score:76, signal:'Buy' },
+  { ticker:'AMZN', company:'Amazon.com Inc', sector:'Technology', pe:44, return1y:52, momentum:78, score:82, signal:'Buy' },
+  { ticker:'GOOGL', company:'Alphabet Inc', sector:'Technology', pe:22, return1y:38, momentum:71, score:79, signal:'Buy' },
+  { ticker:'META', company:'Meta Platforms', sector:'Technology', pe:24, return1y:61, momentum:80, score:83, signal:'Buy' },
+  { ticker:'JPM', company:'JPMorgan Chase', sector:'Finance', pe:12, return1y:28, momentum:64, score:74, signal:'Buy' },
+  { ticker:'BAC', company:'Bank of America', sector:'Finance', pe:11, return1y:14, momentum:52, score:61, signal:'Hold' },
+  { ticker:'GS', company:'Goldman Sachs', sector:'Finance', pe:13, return1y:32, momentum:66, score:73, signal:'Buy' },
+  { ticker:'JNJ', company:'Johnson & Johnson', sector:'Healthcare', pe:16, return1y:-4, momentum:38, score:54, signal:'Hold' },
+  { ticker:'UNH', company:'UnitedHealth Group', sector:'Healthcare', pe:18, return1y:-12, momentum:29, score:42, signal:'Sell' },
+  { ticker:'PFE', company:'Pfizer Inc', sector:'Healthcare', pe:8, return1y:-18, momentum:24, score:38, signal:'Sell' },
+  { ticker:'LLY', company:'Eli Lilly & Co', sector:'Healthcare', pe:58, return1y:82, momentum:87, score:88, signal:'Buy' },
+  { ticker:'XOM', company:'ExxonMobil Corp', sector:'Energy', pe:14, return1y:9, momentum:48, score:62, signal:'Hold' },
+  { ticker:'CVX', company:'Chevron Corp', sector:'Energy', pe:13, return1y:4, momentum:43, score:58, signal:'Hold' },
+  { ticker:'SLB', company:'SLB (Schlumberger)', sector:'Energy', pe:15, return1y:-8, momentum:35, score:46, signal:'Sell' },
+  { ticker:'COST', company:'Costco Wholesale', sector:'Consumer', pe:50, return1y:29, momentum:67, score:75, signal:'Buy' },
+  { ticker:'WMT', company:'Walmart Inc', sector:'Consumer', pe:38, return1y:47, momentum:76, score:80, signal:'Buy' },
+  { ticker:'MCD', company:"McDonald's Corp", sector:'Consumer', pe:24, return1y:2, momentum:41, score:56, signal:'Hold' },
+  { ticker:'CAT', company:'Caterpillar Inc', sector:'Industrials', pe:17, return1y:16, momentum:55, score:66, signal:'Hold' },
+  { ticker:'DE', company:'Deere & Company', sector:'Industrials', pe:16, return1y:-5, momentum:36, score:49, signal:'Hold' },
+  { ticker:'RTX', company:'RTX Corporation', sector:'Industrials', pe:35, return1y:41, momentum:72, score:77, signal:'Buy' },
+];
+
+let sortCol = 'score', sortDir = -1, filtered = [...STOCKS];
+
+function scoreColor(s) {
+  if (s >= 80) return '#3B6D11';
+  if (s >= 65) return '#BA7517';
+  return '#A32D2D';
+}
+
+function render() {
+  const tbody = document.getElementById('table-body');
+  if (!filtered.length) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty"><i class="ti ti-mood-empty"></i>No stocks match your filters. Try adjusting them.</div></td></tr>`;
+  } else {
+    tbody.innerHTML = filtered.map(s => {
+      const retStr = (s.return1y >= 0 ? '+' : '') + s.return1y + '%';
+      const retClass = s.return1y >= 0 ? 'positive' : 'negative';
+      const momStr = (s.momentum >= 0 ? '+' : '') + s.momentum;
+      const sigClass = s.signal === 'Buy' ? 'badge-buy' : s.signal === 'Hold' ? 'badge-hold' : 'badge-sell';
+      const fill = scoreColor(s.score);
+      return `<tr>
+        <td><div class="ticker">${s.ticker}</div><div class="company">${s.company}</div></td>
+        <td>${s.pe}x</td>
+        <td class="${retClass}">${retStr}</td>
+        <td class="${retClass}">${momStr}</td>
+        <td><div class="score-bar-wrap"><div class="score-bar"><div class="score-fill" style="width:${s.score}%;background:${fill}"></div></div><span class="score-num" style="color:${fill}">${s.score}</span></div></td>
+        <td><span class="sector-tag">${s.sector}</span></td>
+        <td><span class="badge ${sigClass}">${s.signal}</span></td>
+      </tr>`;
+    }).join('');
+  }
+
+  const buys = filtered.filter(s => s.signal === 'Buy').length;
+  const avgScore = filtered.length ? Math.round(filtered.reduce((a,s) => a + s.score, 0) / filtered.length) : 0;
+  const best = filtered.length ? filtered.reduce((a,b) => b.return1y > a.return1y ? b : a, filtered[0]) : null;
+  document.getElementById('stats-row').innerHTML = `
+    <div class="stat-card"><div class="stat-label">Showing</div><div class="stat-val">${filtered.length} stocks</div></div>
+    <div class="stat-card"><div class="stat-label">Buy signals</div><div class="stat-val green">${buys}</div></div>
+    <div class="stat-card"><div class="stat-label">Avg score</div><div class="stat-val">${avgScore}</div></div>
+    <div class="stat-card"><div class="stat-label">Best 1Y return</div><div class="stat-val green">${best ? best.ticker + ' +' + best.return1y + '%' : '—'}</div></div>
+  `;
+  document.getElementById('results-count').textContent = `${filtered.length} of ${STOCKS.length} stocks`;
+  document.querySelectorAll('thead th[id]').forEach(th => th.classList.remove('active'));
+  const activeTh = document.getElementById('th-' + sortCol);
+  if (activeTh) activeTh.classList.add('active');
+}
+
+function applyFilters() {
+  const sector = document.getElementById('f-sector').value;
+  const signal = document.getElementById('f-signal').value;
+  const peMax = parseFloat(document.getElementById('f-pe').value);
+  const minScore = parseInt(document.getElementById('f-score').value);
+  const ret = document.getElementById('f-ret').value;
+  const search = document.getElementById('search').value.toLowerCase();
+
+  filtered = STOCKS.filter(s => {
+    if (sector && s.sector !== sector) return false;
+    if (signal && s.signal !== signal) return false;
+    if (!isNaN(peMax) && s.pe > peMax) return false;
+    if (s.score < minScore) return false;
+    if (ret === 'pos' && s.return1y < 0) return false;
+    if (ret === 'neg' && s.return1y >= 0) return false;
+    if (ret === '10' && s.return1y < 10) return false;
+    if (ret === '25' && s.return1y < 25) return false;
+    if (search && !s.ticker.toLowerCase().includes(search) && !s.company.toLowerCase().includes(search)) return false;
+    return true;
+  });
+
+  filtered.sort((a, b) => {
+    const av = a[sortCol], bv = b[sortCol];
+    if (typeof av === 'string') return sortDir * av.localeCompare(bv);
+    return sortDir * (av - bv);
+  });
+
+  render();
+}
+
+function sortBy(col) {
+  if (sortCol === col) sortDir *= -1;
+  else { sortCol = col; sortDir = -1; }
+  applyFilters();
+}
+
+function resetFilters() {
+  ['f-sector','f-signal','f-ret'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f-pe').value = '';
+  document.getElementById('f-score').value = '0';
+  document.getElementById('search').value = '';
+  applyFilters();
+}
+
+applyFilters();
+</script>
+</body>
+</html>
